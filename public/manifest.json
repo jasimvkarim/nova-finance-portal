@@ -1,0 +1,17 @@
+{
+  "name": "Nova Finance",
+  "short_name": "Nova",
+  "description": "Your personal finance command center",
+  "start_url": "/budget-plan",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

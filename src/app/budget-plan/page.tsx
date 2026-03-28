@@ -103,6 +103,164 @@ const RULES = [
   'Weekly limit AED 350–375 is law',
 ];
 
+// ─── Calendar export ────────────────────────────────────────────────────────
+
+function icsDate(isoDate: string, timeUtc?: string): string {
+  // isoDate: 'YYYY-MM-DD', timeUtc: 'HHmmss' → datetime, else all-day
+  const d = isoDate.replace(/-/g, '');
+  return timeUtc ? `${d}T${timeUtc}Z` : `${d}`;
+}
+
+function makeEvent({
+  uid, summary, description, date, timeUtc, alarmMinutes = 0,
+}: {
+  uid: string; summary: string; description: string;
+  date: string; timeUtc?: string; alarmMinutes?: number;
+}): string {
+  const dtStart = timeUtc
+    ? `DTSTART:${icsDate(date, timeUtc)}`
+    : `DTSTART;VALUE=DATE:${icsDate(date)}`;
+  const dtEnd = timeUtc
+    ? `DTEND:${icsDate(date, timeUtc)}`
+    : `DTEND;VALUE=DATE:${icsDate(date)}`;
+  const alarm = alarmMinutes >= 0
+    ? `BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:${summary}\r\nTRIGGER:-PT${alarmMinutes}M\r\nEND:VALARM\r\n`
+    : '';
+  return [
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${icsDate('2026-03-28', '000000')}`,
+    dtStart,
+    dtEnd,
+    `SUMMARY:${summary}`,
+    `DESCRIPTION:${description.replace(/\n/g, '\\n')}`,
+    alarm + 'END:VEVENT',
+  ].join('\r\n');
+}
+
+function downloadICS() {
+  // Dubai = UTC+4, so 8 AM Dubai = 04:00 UTC, 9 AM = 05:00 UTC
+  const events = [
+    makeEvent({
+      uid: 'nova-bs-4782@nova-finance',
+      summary: 'PAY Card 4782 — AED 50-100 (OVERDUE)',
+      description: 'Card 4782 is overdue. Pay AED 50-100 ASAP — before salary on 15th.',
+      date: '2026-03-28',
+      alarmMinutes: 0,
+    }),
+    makeEvent({
+      uid: 'nova-cashnow-delay@nova-finance',
+      summary: 'Cash Now — last safe day to delay (pay on 15th)',
+      description: 'If Cash Now is unpaid, delay max 2 days. Pay immediately on salary day (15th).',
+      date: '2026-04-13',
+      timeUtc: '050000',
+      alarmMinutes: 0,
+    }),
+    makeEvent({
+      uid: 'nova-salary-day@nova-finance',
+      summary: 'SALARY DAY — Execute Budget Plan',
+      description: 'Order: Rent → Internet → Transport → Tabby → Cash Now → 4882 min → 6501 min → 4782 extra → 6501 attack → Keep 1,400-1,500',
+      date: '2026-04-15',
+      timeUtc: '040000',
+      alarmMinutes: 0,
+    }),
+    makeEvent({
+      uid: 'nova-4882-due@nova-finance',
+      summary: 'Card 4882 minimum due (AED 100)',
+      description: 'Card 4882 minimum payment due. Should already be paid on salary day (15th).',
+      date: '2026-04-17',
+      timeUtc: '050000',
+      alarmMinutes: 60,
+    }),
+    makeEvent({
+      uid: 'nova-week2-check@nova-finance',
+      summary: 'Nova — Week 2 budget check',
+      description: 'Spend ≤ AED 375 this week. Optional: extra AED 200-300 to card 6501.',
+      date: '2026-04-22',
+      timeUtc: '050000',
+      alarmMinutes: 0,
+    }),
+    makeEvent({
+      uid: 'nova-week3-check@nova-finance',
+      summary: 'Nova — Week 3 budget check',
+      description: 'Spend ≤ AED 375 this week. Continue 6501 push if possible.',
+      date: '2026-04-29',
+      timeUtc: '050000',
+      alarmMinutes: 0,
+    }),
+    makeEvent({
+      uid: 'nova-6501-due@nova-finance',
+      summary: 'Card 6501 minimum due (AED 100)',
+      description: 'Card 6501 minimum payment due today.',
+      date: '2026-04-30',
+      timeUtc: '050000',
+      alarmMinutes: 120,
+    }),
+    makeEvent({
+      uid: 'nova-week4-check@nova-finance',
+      summary: 'Nova — Week 4: prepare next cycle',
+      description: 'Spend ≤ AED 375. No overspending. Prepare for next salary cycle.',
+      date: '2026-05-06',
+      timeUtc: '050000',
+      alarmMinutes: 0,
+    }),
+  ];
+
+  const cal = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Nova Finance//Budget Plan April 2026//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:Nova Budget Plan — April 2026',
+    'X-WR-TIMEZONE:Asia/Dubai',
+    ...events,
+    'END:VCALENDAR',
+  ].join('\r\n');
+
+  const blob = new Blob([cal], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'nova-budget-april-2026.ics';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+const NOTIF_STORAGE_KEY = 'nova-notif-last-shown';
+const NOTIF_ENABLED_KEY = 'nova-notif-enabled';
+
+function getTodayMessage(): { title: string; body: string } {
+  const today = new Date();
+  const month = today.getMonth() + 1; // 1-based
+  const day = today.getDate();
+
+  if (month === 3 || (month === 4 && day < 15)) {
+    return {
+      title: 'Before salary reminder',
+      body: 'Card 4782 paid? Spending essentials only? Stay on track.',
+    };
+  }
+  if (month === 4 && day === 15) {
+    return {
+      title: 'SALARY DAY — Open Nova Finance',
+      body: 'Execute the plan: Rent → Internet → Tabby → Cash Now → Cards → 6501 attack',
+    };
+  }
+  if (month === 4 && day <= 21) {
+    return {
+      title: 'Week 1 check-in',
+      body: 'Spend ≤ AED 375 this week. Card 4882 confirmed paid?',
+    };
+  }
+  return {
+    title: 'Weekly budget check',
+    body: 'Spend ≤ AED 375 this week. Stay within the plan.',
+  };
+}
+
 function CheckItem({
   id,
   label,
@@ -182,12 +340,34 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
 export default function BudgetPlanPage() {
   const [checks, setChecks] = useState<Record<string, boolean>>({});
   const [hydrated, setHydrated] = useState(false);
+  const [notifStatus, setNotifStatus] = useState<'idle' | 'granted' | 'denied' | 'unsupported'>('idle');
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) setChecks(JSON.parse(saved));
     } catch {}
+
+    // Determine notification status
+    if (!('Notification' in window)) {
+      setNotifStatus('unsupported');
+    } else if (Notification.permission === 'granted') {
+      setNotifStatus('granted');
+      // Fire a daily reminder if enabled and not shown today
+      const enabled = localStorage.getItem(NOTIF_ENABLED_KEY) === 'true';
+      if (enabled) {
+        const lastShown = localStorage.getItem(NOTIF_STORAGE_KEY);
+        const today = new Date().toDateString();
+        if (lastShown !== today) {
+          const { title, body } = getTodayMessage();
+          new Notification(title, { body, icon: '/favicon.ico' });
+          localStorage.setItem(NOTIF_STORAGE_KEY, today);
+        }
+      }
+    } else if (Notification.permission === 'denied') {
+      setNotifStatus('denied');
+    }
+
     setHydrated(true);
   }, []);
 
@@ -200,6 +380,21 @@ export default function BudgetPlanPage() {
 
   function toggle(id: string, val: boolean) {
     setChecks((prev) => ({ ...prev, [id]: val }));
+  }
+
+  async function enableNotifications() {
+    if (!('Notification' in window)) return;
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      localStorage.setItem(NOTIF_ENABLED_KEY, 'true');
+      setNotifStatus('granted');
+      new Notification('Nova Finance reminders on', {
+        body: 'You will get a daily check-in when you open the app.',
+        icon: '/favicon.ico',
+      });
+    } else {
+      setNotifStatus('denied');
+    }
   }
 
   function resetAll() {
@@ -246,6 +441,81 @@ export default function BudgetPlanPage() {
             <p className="mt-1 text-xs text-slate-400">{totalDone} of {totalAll} tasks complete</p>
           </div>
         </div>
+
+        {/* Reminders */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-4">
+          <h2 className="mb-3 text-sm font-semibold text-slate-700">Stay on track</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+
+            {/* Export to Calendar */}
+            <button
+              onClick={downloadICS}
+              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-slate-300 hover:bg-white"
+            >
+              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 20 20">
+                  <rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" strokeWidth="1.6"/>
+                  <path d="M3 8h14M7 2v4M13 2v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                </svg>
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-800">Export to Calendar</p>
+                <p className="text-xs text-slate-500">All dates + alarms → .ics</p>
+              </div>
+            </button>
+
+            {/* Browser notifications */}
+            {notifStatus === 'granted' ? (
+              <div className="flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-green-100 text-green-700">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 20 20">
+                    <path d="M10 2a6 6 0 016 6c0 3 1 4 2 5H2c1-1 2-2 2-5a6 6 0 016-6z" stroke="currentColor" strokeWidth="1.6"/>
+                    <path d="M8 17a2 2 0 004 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-green-800">Daily reminders on</p>
+                  <p className="text-xs text-green-600">Shown when you open the app</p>
+                </div>
+              </div>
+            ) : notifStatus === 'denied' ? (
+              <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-400">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 20 20">
+                    <path d="M10 2a6 6 0 016 6c0 3 1 4 2 5H2c1-1 2-2 2-5a6 6 0 016-6z" stroke="currentColor" strokeWidth="1.6"/>
+                    <path d="M8 17a2 2 0 004 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-600">Notifications blocked</p>
+                  <p className="text-xs text-slate-400">Enable in browser settings</p>
+                </div>
+              </div>
+            ) : notifStatus === 'unsupported' ? null : (
+              <button
+                onClick={enableNotifications}
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left transition hover:border-slate-300 hover:bg-white"
+              >
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 20 20">
+                    <path d="M10 2a6 6 0 016 6c0 3 1 4 2 5H2c1-1 2-2 2-5a6 6 0 016-6z" stroke="currentColor" strokeWidth="1.6"/>
+                    <path d="M8 17a2 2 0 004 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                  </svg>
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Enable daily reminders</p>
+                  <p className="text-xs text-slate-500">Check-in when you open the app</p>
+                </div>
+              </button>
+            )}
+
+          </div>
+
+          {/* Add to home screen hint */}
+          <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            <span className="font-semibold text-slate-700">Add to home screen</span> for one-tap access on your phone — tap Share (iOS) or menu (Android) → "Add to Home Screen"
+          </p>
+        </section>
 
         {/* Overview */}
         <section>
