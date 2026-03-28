@@ -1,0 +1,4 @@
+:HL["/nova-finance-portal/_next/static/chunks/8c3c01015f3dc5f8.css","style"]
+:HL["/nova-finance-portal/_next/static/media/GeistMono_Variable-s.p.2f937313.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+:HL["/nova-finance-portal/_next/static/media/Geist_Variable-s.p.92592eb2.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
+0:{"buildId":"rpNetI07ok1sUjxBa-YmQ","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":true},"staleTime":300}
