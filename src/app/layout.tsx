@@ -19,6 +19,11 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Nova Finance",
   description: "Your personal finance command center",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -35,8 +40,6 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="theme-color" content="#0f172a" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

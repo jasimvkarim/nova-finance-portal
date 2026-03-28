@@ -359,9 +359,11 @@ export default function BudgetPlanPage() {
         const lastShown = localStorage.getItem(NOTIF_STORAGE_KEY);
         const today = new Date().toDateString();
         if (lastShown !== today) {
-          const { title, body } = getTodayMessage();
-          new Notification(title, { body, icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/favicon.ico` });
-          localStorage.setItem(NOTIF_STORAGE_KEY, today);
+          try {
+            const { title, body } = getTodayMessage();
+            new Notification(title, { body, icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/favicon.ico` });
+            localStorage.setItem(NOTIF_STORAGE_KEY, today);
+          } catch {}
         }
       }
     } else if (Notification.permission === 'denied') {
@@ -388,10 +390,12 @@ export default function BudgetPlanPage() {
     if (permission === 'granted') {
       localStorage.setItem(NOTIF_ENABLED_KEY, 'true');
       setNotifStatus('granted');
-      new Notification('Nova Finance reminders on', {
-        body: 'You will get a daily check-in when you open the app.',
-        icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/favicon.ico`,
-      });
+      try {
+        new Notification('Nova Finance reminders on', {
+          body: 'You will get a daily check-in when you open the app.',
+          icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/favicon.ico`,
+        });
+      } catch {}
     } else {
       setNotifStatus('denied');
     }
