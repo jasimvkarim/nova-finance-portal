@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -13,6 +15,20 @@ export default function Home() {
             Log expenses manually, track debt, and get smart daily insights at 9 PM (Dubai).
           </p>
         </header>
+
+        <Link
+          href="/budget-plan"
+          className="group flex items-center justify-between rounded-2xl border border-slate-900 bg-slate-900 px-6 py-5 text-white transition hover:bg-slate-800"
+        >
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">April 2026</p>
+            <p className="mt-1 text-lg font-semibold">Monthly Budget Plan</p>
+            <p className="text-sm text-slate-400">Salary on 15th · 10,000 AED · Interactive checklist</p>
+          </div>
+          <svg className="h-5 w-5 flex-shrink-0 text-slate-400 transition group-hover:translate-x-1" fill="none" viewBox="0 0 20 20">
+            <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </Link>
 
         <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
